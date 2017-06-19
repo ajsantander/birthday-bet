@@ -1,0 +1,51 @@
+{
+  "contract_name": "BetOnDate",
+  "abi": [
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "unitBet",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "name": "_unitBet",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "constructor"
+    }
+  ],
+  "unlinked_binary": "0x60606040523415600b57fe5b6040516020806100a483398101604052515b60008190555b505b6071806100336000396000f300606060405263ffffffff60e060020a600035041663d747f20081146020575bfe5b3415602757fe5b602d603f565b60408051918252519081900360200190f35b600054815600a165627a7a72305820914574cb4b4d49c740595d8441510e5ca14bf11270f218e414daf3766da7badb0029",
+  "networks": {
+    "1497765659344": {
+      "events": {},
+      "links": {},
+      "address": "0x5c4a6a3934adce76b1eb39ed254224f53e7f9880",
+      "updated_at": 1497768091953
+    },
+    "1497768127388": {
+      "events": {},
+      "links": {},
+      "address": "0x809cfd2fbf295fa3956e6a0f09034da416a0cc12",
+      "updated_at": 1497768294348
+    },
+    "1497768367349": {
+      "events": {},
+      "links": {},
+      "address": "0x671a3aebc43311db1378a41ad7fdaded1dd10b2f",
+      "updated_at": 1497768961163
+    }
+  },
+  "schema_version": "0.0.5",
+  "updated_at": 1497768961163
+}
