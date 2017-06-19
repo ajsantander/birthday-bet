@@ -2,7 +2,7 @@ pragma solidity ^0.4.0;
 
 contract BetOnDate {
 
-    uint public unitBetWei;
+    uint public unitBet;
     uint public lastDayToBet;
     bool public isDebugging;
     uint public simulatedNow;
@@ -36,10 +36,10 @@ contract BetOnDate {
         if(msg.sender == owner) _;
     }
 
-    function BetOnDate(uint _unitBetWei, uint _lastDayToBet, bool _isDebugging) {
+    function BetOnDate(uint _unitBet, uint _lastDayToBet, bool _isDebugging) {
         owner = msg.sender;
         isDebugging = _isDebugging;
-        unitBetWei = _unitBetWei;
+        unitBet = _unitBet;
         lastDayToBet = _lastDayToBet;
         currentGameState = GameState.betsAreOpen;
     }
@@ -133,7 +133,7 @@ contract BetOnDate {
             valid = false;
         }
 
-        if(valid && value != unitBetWei) {
+        if(valid && value != unitBet) {
             errorMsg = 'Incorrect bet amount.';
             valid = false;
         }
