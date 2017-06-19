@@ -14,6 +14,7 @@ contract BetOnDate {
     mapping (address => uint) prizes;
     address[] players;
 
+    event GameStateChanged(uint state);
     event Log(bytes32 msg);
 
     enum GameState {
@@ -42,6 +43,23 @@ contract BetOnDate {
         unitBet = _unitBet;
         lastDayToBet = _lastDayToBet;
         currentGameState = GameState.betsAreOpen;
+    }
+
+    // TODO: make private
+    function updateGameState(GameState state) {
+        currentGameState = state;
+
+        uint gameStateIdx;
+        if(currentGameState == GameState.betsAreOpen) {
+            gameStateIdx = 0;
+        }
+        else if(currentGameState == GameState.betsAreClosed) {
+            gameStateIdx = 1;
+        }
+        else if(currentGameState == GameState.betsResolved) {
+            gameStateIdx = 2;
+        }
+        GameStateChanged(gameStateIdx);
     }
 
     function withdrawPrize() {
@@ -95,7 +113,7 @@ contract BetOnDate {
             prizes[winner] = prize;
         }
 
-        currentGameState = GameState.betsResolved;
+        updateGameState(GameState.betsResolved);
     }
 
     function placeBet(uint date) payable {
@@ -119,7 +137,7 @@ contract BetOnDate {
     function validateBet(uint date, uint value) constant returns(bool, bytes32) {
 
         bool valid = true;
-        bytes32 errorMsg = '';
+        bytes32 errorMsg = 'Bet is valid.';
 
         evaluateGameState();
 
@@ -153,12 +171,13 @@ contract BetOnDate {
 
     function evaluateGameState() {
         if(currentGameState == GameState.betsAreOpen && getTime() > lastDayToBet) {
-            currentGameState = GameState.betsAreClosed;
+            updateGameState(GameState.betsAreClosed);
         }
     }
 
     function setTime(uint date) onlyOwner onlyIfDebugging {
         simulatedNow = date;
+        evaluateGameState();
     }
 
     function getTime() constant returns(uint) {
