@@ -9,7 +9,7 @@ which should occur within a given time span. Bets have a fixed amount and winner
 NOTE: This is by no means a production or secure smart contract, it is being developed for educational purposes, and is intended for testnet use only.
 
 ## UI project
-(birthday-bet-ui)[https://github.com/ajsantander/birthday-bet-ui]
+https://github.com/ajsantander/birthday-bet-ui
 
 ## Rules
 TODO
