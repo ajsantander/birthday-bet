@@ -4,30 +4,23 @@ contract BetOnDate {
 
     uint public unitBet;
     uint public lastDayToBet;
-    bool public isDebugging;
-    uint public simulatedNow;
-    address[] public winners;
 
     address public owner;
 
     mapping (address => uint) bets;
-    mapping (address => uint) prizes;
     address[] players;
 
-    event GameStateChanged(uint state);
-    event Log(bytes32 msg);
+    function BetOnDate(uint _unitBet, uint _lastDayToBet, bool _isDebugging) {
+        owner = msg.sender;
+        isDebugging = _isDebugging;
+        unitBet = _unitBet;
+        lastDayToBet = _lastDayToBet;
+        currentGameState = GameState.betsAreOpen;
 
-    enum GameState {
-        betsAreOpen,
-        betsAreClosed,
-        betsResolved
+        // TODO: use end date
+        maxDistance = 5184000;
+        minDistance = maxDistance; // seconds in 2 months
     }
-    GameState public currentGameState;
-
-//    modifier onlyInState(GameState expectedState) {
-//        if(expectedState == currentGameState) _;
-//        else throw;
-//    }
 
     modifier onlyIfDebugging() {
         if(isDebugging) _;
@@ -37,13 +30,23 @@ contract BetOnDate {
         if(msg.sender == owner) _;
     }
 
-    function BetOnDate(uint _unitBet, uint _lastDayToBet, bool _isDebugging) {
-        owner = msg.sender;
-        isDebugging = _isDebugging;
-        unitBet = _unitBet;
-        lastDayToBet = _lastDayToBet;
-        currentGameState = GameState.betsAreOpen;
+    //    modifier onlyInState(GameState expectedState) {
+    //        if(expectedState == currentGameState) _;
+    //        else throw;
+    //    }
+
+    /* --------------------
+        Game State
+       -------------------- */
+
+    event GameStateChanged(uint state);
+
+    enum GameState {
+        betsAreOpen,
+        betsAreClosed,
+        betsResolved
     }
+    GameState public currentGameState;
 
     // TODO: make private
     function updateGameState(GameState state) {
@@ -62,11 +65,29 @@ contract BetOnDate {
         GameStateChanged(gameStateIdx);
     }
 
+    function evaluateGameState() {
+        if(currentGameState == GameState.betsAreOpen && getTime() > lastDayToBet) {
+            updateGameState(GameState.betsAreClosed);
+        }
+    }
+
+    /* --------------------
+        Game Resolution
+       -------------------- */
+
+    uint minDistance;
+    uint maxDistance;
+    uint numWinners;
+    uint totalPrize;
+    mapping (address => uint) distances;
+    mapping (uint => uint) distanceCounts;
+
     function withdrawPrize() {
         if(bets[msg.sender] == 0) return;
-        if(prizes[msg.sender] != 0) {
-            msg.sender.transfer(prizes[msg.sender]);
-            prizes[msg.sender] = 0;
+        if(distances[msg.sender] == minDistance) {
+            uint prize = totalPrize / numWinners;
+            msg.sender.transfer(prize);
+            distances[msg.sender] = maxDistance;
         }
     }
 
@@ -77,44 +98,33 @@ contract BetOnDate {
         uint betDate;
         uint distance;
 
-        // Calculate min distance to resolution date.
-        uint minDistance = 5184000; // seconds in 2 months
+        totalPrize = this.balance;
+
+        // Calculate min distance to resolution date
+        // and the distance of each player.
         for(i = 0; i < players.length; i++) {
             player = players[i];
             betDate = bets[player];
             if(resolutionDate > betDate) distance = resolutionDate - betDate;
             else distance = betDate - resolutionDate;
+            distances[player] = distance;
+            distanceCounts[distance] += 1;
             if(distance < minDistance) {
                 minDistance = distance;
             }
         }
 
-        // Populate winners array
-        for(i = 0; i < players.length; i++) {
-            player = players[i];
-            betDate = bets[player];
-            if(resolutionDate > betDate) distance = resolutionDate - betDate;
-            else distance = betDate - resolutionDate;
-            if(distance == minDistance) {
-                winners.push(player);
-            }
-        }
-
-        // If no winners (shouldn't be possible)
-        // everyone is a winner
-        if(winners.length == 0) {
-            winners = players;
-        }
-
-        // Populate prizes
-        uint prize = this.balance / winners.length;
-        for(i = 0; i < winners.length; i++) {
-            address winner = winners[i];
-            prizes[winner] = prize;
-        }
-
+        numWinners = distanceCounts[minDistance];
         updateGameState(GameState.betsResolved);
     }
+
+    function getNumWinners() constant returns(uint) {
+        return numWinners;
+    }
+
+    /* --------------------
+        Placing Bets
+       -------------------- */
 
     function placeBet(uint date) payable {
 
@@ -122,7 +132,6 @@ contract BetOnDate {
 
         // return funds and abort if bet is invalid
         if(!betIsValid) {
-            Log(errorMsg);
             msg.sender.transfer(msg.value);
             return;
         }
@@ -169,11 +178,12 @@ contract BetOnDate {
         return (valid, errorMsg);
     }
 
-    function evaluateGameState() {
-        if(currentGameState == GameState.betsAreOpen && getTime() > lastDayToBet) {
-            updateGameState(GameState.betsAreClosed);
-        }
-    }
+    /* ---------------------------
+        Debugging
+       --------------------------- */
+
+    bool public isDebugging;
+    uint public simulatedNow;
 
     function setTime(uint date) onlyOwner onlyIfDebugging {
         simulatedNow = date;
@@ -181,15 +191,7 @@ contract BetOnDate {
     }
 
     function getTime() constant returns(uint) {
-        if(isDebugging) {
-            return simulatedNow;
-        }
-        else {
-            return now;
-        }
-    }
-
-    function getNumWinners() constant returns(uint) {
-        return winners.length;
+        if(isDebugging) { return simulatedNow; }
+        else { return now; }
     }
 }

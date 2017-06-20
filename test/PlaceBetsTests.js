@@ -1,7 +1,7 @@
 let BetOnDate = artifacts.require('./BetOnDate.sol');
-let util = require('./TestUtil.js');
+let util = require('./utils/TestUtil.js');
 
-contract('2. BetOnDate(Place bets tests)', function(accounts) {
+contract('BetOnDate(Place bets tests)', function(accounts) {
 
   let contractAddress;
   let unitBet;

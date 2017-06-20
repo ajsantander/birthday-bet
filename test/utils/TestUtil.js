@@ -2,7 +2,7 @@
  * Config
  * */
 
-let verbose = 1;
+let verbose = 0;
 
 /*
  * Utils
