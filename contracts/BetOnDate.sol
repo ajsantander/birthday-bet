@@ -77,21 +77,28 @@ contract BetOnDate {
 
     uint minDistance;
     uint maxDistance;
-    uint numWinners;
+    uint public numWinners;
     uint totalPrize;
+    uint public resolutionDate;
     mapping (address => uint) distances;
     mapping (uint => uint) distanceCounts;
 
     function withdrawPrize() {
         if(bets[msg.sender] == 0) return;
         if(distances[msg.sender] == minDistance) {
-            uint prize = totalPrize / numWinners;
+            uint prize = getPrize();
             msg.sender.transfer(prize);
             distances[msg.sender] = maxDistance;
         }
     }
 
-    function resolve(uint resolutionDate) onlyOwner {
+    function getPrize() constant returns (uint) {
+        return totalPrize / numWinners;
+    }
+
+    function resolve(uint _resolutionDate) onlyOwner {
+
+        resolutionDate = _resolutionDate;
 
         uint i;
         address player;
@@ -118,17 +125,13 @@ contract BetOnDate {
         updateGameState(GameState.betsResolved);
     }
 
-    function getNumWinners() constant returns(uint) {
-        return numWinners;
-    }
-
     /* --------------------
         Placing Bets
        -------------------- */
 
     function placeBet(uint date) payable {
 
-        var (betIsValid, errorMsg) = validateBet(date, msg.value);
+        var (betIsValid, /*errorMsg*/) = validateBet(date, msg.value);
 
         // return funds and abort if bet is invalid
         if(!betIsValid) {
