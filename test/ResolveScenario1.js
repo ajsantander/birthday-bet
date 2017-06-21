@@ -1,7 +1,7 @@
 let BetOnDate = artifacts.require('./BetOnDate.sol');
 let util = require('./utils/TestUtil.js');
 
-contract('BetOnDate(Resolution: 1 winner)', function(accounts) {
+contract('BetOnDate(ResolveScenario1)', function(accounts) {
 
   let contractAddress;
   let unitBet;
@@ -73,28 +73,20 @@ contract('BetOnDate(Resolution: 1 winner)', function(accounts) {
     return BetOnDate.deployed()
       .then(function(_instance) {
         instance = _instance;
-        let resolutionDate = lastDayToBet + secondsInADay * 7;
+        let resolutionDate = lastDayToBet + secondsInADay * 5;
         util.log('resolving on: ', new Date(resolutionDate * 1000));
         return instance.resolve(resolutionDate, {
           from: accounts[0]
         });
       })
       .then(function() {
-        return instance.getNumWinners.call();
+        return instance.numWinners.call();
       })
       .then(function(winnerCount) {
         util.log('winners: ', winnerCount.toNumber());
-        assert.equal(winnerCount.toNumber(), 1, "the bet was supposed to be invalid");
+        assert.equal(winnerCount.toNumber(), 3, "the bet was supposed to be invalid");
       })
   });
-
-  // TODO: should not allow losers to withdraw a prize
-
-  // TODO: should not allow a winner to withdraw the prize again
-
-  // TODO: it('should not allow anyone but the owner to resolve on a valid date');
-
-  // TODO: it('should not allow the owner to resolve with an invalid date')
 
   // WITHDRAW PRIZE
   it('should allow winners to withdraw their prize', function() {
@@ -104,22 +96,32 @@ contract('BetOnDate(Resolution: 1 winner)', function(accounts) {
         from: accounts[acctIndex]
       });
     }
-    let initialWinnerBalance1 = util.getBalance(accounts[9]);
+    let initialWinnerBalance1 = util.getBalance(accounts[6]);
+    let initialWinnerBalance2 = util.getBalance(accounts[7]);
+    let initialWinnerBalance3 = util.getBalance(accounts[8]);
     util.log('initial winner 1 balance: ', initialWinnerBalance1);
+    util.log('initial winner 2 balance: ', initialWinnerBalance2);
+    util.log('initial winner 3 balance: ', initialWinnerBalance3);
     return BetOnDate.deployed()
       .then(function(_instance) {
         instance = _instance;
-        return withdrawPrize(9);
+        return withdrawPrize(6);
       })
+      .then(function() { return withdrawPrize(7); })
+      .then(function() { return withdrawPrize(8); })
       .then(function() {
         let unitBetEth = web3.fromWei(unitBet, 'ether');
         let totalPrize = 9 * unitBetEth;
-        let splitPrize = totalPrize;
-        let winnerBalance1 = util.getBalance(accounts[9]);
+        let splitPrize = totalPrize / 3;
+        let winnerBalance1 = util.getBalance(accounts[6]);
+        let winnerBalance2 = util.getBalance(accounts[7]);
+        let winnerBalance3 = util.getBalance(accounts[8]);
         let contractBalance = util.getBalance(contractAddress);
         util.logBalances(accounts.concat([contractAddress]));
         let tolerableDelta = 0.01; // consider bet transaction cost
         assert.approximately(winnerBalance1, initialWinnerBalance1 + splitPrize, tolerableDelta, "a winners balance is wrong");
+        assert.approximately(winnerBalance2, initialWinnerBalance2 + splitPrize, tolerableDelta, "a winners balance is wrong");
+        assert.approximately(winnerBalance3, initialWinnerBalance3 + splitPrize, tolerableDelta, "a winners balance is wrong");
         assert.equal(contractBalance, 0, "the contract shouldn't have any funds left");
       });
   });

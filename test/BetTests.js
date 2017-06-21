@@ -1,13 +1,15 @@
 let BetOnDate = artifacts.require('./BetOnDate.sol');
 let util = require('./utils/TestUtil.js');
 
-contract('BetOnDate(Place bets tests)', function(accounts) {
+contract('BetOnDate(BetTests)', function(accounts) {
 
   let contractAddress;
   let unitBet;
   let lastDayToBet;
   let postDate;
   let preDate;
+
+  let secondsInADay = 86400;
 
   // PREPARE
   before(function(done) {
@@ -71,6 +73,65 @@ contract('BetOnDate(Place bets tests)', function(accounts) {
   it('should reject and return funds from the user when an invalid bet is attempted (wrong unitBet)', function() {
     let player = accounts[2];
     let wrongunitBet = unitBet / 2;
+    let initialPlayerBalance = util.getBalance(player);
+    let initialContractBalance = util.getBalance(contractAddress);
+    util.log('initialPlayerBalance: ', initialPlayerBalance);
+    util.log('initialContractBalance: ', initialContractBalance);
+    return BetOnDate.deployed()
+      .then(function(instance) {
+        let dateUnix = preDate;
+        util.log('placing bet... amount: ', wrongunitBet);
+        return instance.placeBet(dateUnix, {
+          from: player,
+          value: wrongunitBet
+        });
+      })
+      .then(function() {
+        let playerBalance = util.getBalance(player);
+        let contractBalance = util.getBalance(contractAddress);
+        util.log('playerBalance: ', playerBalance);
+        util.log('contractBalance: ', contractBalance);
+        let tolerableDelta = 0.01; // consider bet transaction cost
+        assert.approximately(playerBalance, initialPlayerBalance, tolerableDelta, "the user's balance was changed");
+        assert.equal(contractBalance, initialContractBalance, "the contract's balance was changed");
+      });
+  });
+
+  // ACCEPT A BUNCH OF VALID BETS
+  it('should accept a number of valid bets', function() {
+    let instance;
+    let initialContractBalance = util.getBalance(contractAddress);
+    util.log('initialContractBalance: ', initialContractBalance);
+    function placeBet(acctIndex, date) {
+      util.log('placing bet... date: ', new Date(date * 1000));
+      return instance.placeBet(date, {
+        from: accounts[acctIndex],
+        value: unitBet
+      });
+    }
+    return BetOnDate.deployed()
+      .then(function(_instance) {
+        instance = _instance;
+        return placeBet(2, lastDayToBet);
+      })
+      .then(function() {return placeBet(3, lastDayToBet + secondsInADay * 2);})
+      .then(function() {return placeBet(4, lastDayToBet + secondsInADay * 2);})
+      .then(function() {return placeBet(5, lastDayToBet + secondsInADay * 3);})
+      .then(function() {return placeBet(6, lastDayToBet + secondsInADay * 4);})
+      .then(function() {return placeBet(7, lastDayToBet + secondsInADay * 6);})
+      .then(function() {return placeBet(8, lastDayToBet + secondsInADay * 6);})
+      .then(function() {
+        let contractBalance = util.getBalance(contractAddress);
+        util.log('contractBalance: ', contractBalance);
+        let unitBetEth = web3.fromWei(unitBet, 'ether');
+        assert.equal(contractBalance, initialContractBalance + unitBetEth * 7, "the contract's balance is incorrect");
+      });
+  });
+
+  // BET RETURN EXPLOIT
+  it('shoud not allow invalid bet refunds to be exploited to deplete the contracts balance', function() {
+    let player = accounts[9];
+    let wrongunitBet = unitBet * 3;
     let initialPlayerBalance = util.getBalance(player);
     let initialContractBalance = util.getBalance(contractAddress);
     util.log('initialPlayerBalance: ', initialPlayerBalance);
@@ -208,10 +269,9 @@ contract('BetOnDate(Place bets tests)', function(accounts) {
       });
   });
 
-  // TODO (nice to have): should allow a bet to be withdrawn
-
   // TODO: test exploit: 2nd bet payable return to empty the contract's balance
 
   // TODO: disallow bets on dates beyond two months after last day to bet
 
+  // TODO (nice to have): should allow a bet to be withdrawn
 });
