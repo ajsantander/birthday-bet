@@ -86,19 +86,6 @@ contract BetOnDate {
     mapping (address => uint) distances;
     mapping (uint => uint) distanceCounts;
 
-    function withdrawPrize() onlyInState(GameState.betsResolved) {
-        if(bets[msg.sender] == 0) return;
-        if(distances[msg.sender] == minDistance) {
-            uint prize = getPrize();
-            msg.sender.transfer(prize);
-            distances[msg.sender] = maxDistance;
-        }
-    }
-
-    function getPrize() onlyInState(GameState.betsResolved) constant returns (uint) {
-        return totalPrize / numWinners;
-    }
-
     function resolve(uint _resolutionDate) onlyOwner {
         if(getTime() < lastDayToBet) { return; }
 
@@ -130,6 +117,53 @@ contract BetOnDate {
     }
 
     /* --------------------
+        Prize Withdrawal
+       -------------------- */
+
+    function withdrawPrize() onlyInState(GameState.betsResolved) {
+
+        var (withdrawalIsValid, /*errorMsg*/) = validatePrizeWithdrawal();
+        if(!withdrawalIsValid) {
+            return;
+        }
+
+        uint prize = getPrize();
+        msg.sender.transfer(prize);
+
+        // Avoids winner from extracting a prize twice.
+        distances[msg.sender] = maxDistance;
+    }
+
+    function getPrize() onlyInState(GameState.betsResolved) constant returns (uint) {
+        return totalPrize / numWinners;
+    }
+
+    function validatePrizeWithdrawal() constant returns(bool, bytes32) {
+
+        bool valid = true;
+        bytes32 errorMsg = 'Withdrawal is valid.';
+
+        evaluateGameState();
+
+        if(valid && currentGameState != GameState.betsResolved) {
+            errorMsg = 'Bets are not resolved.';
+            valid = false;
+        }
+
+        if(valid && bets[msg.sender] == 0) {
+            errorMsg = 'Player didnt bet.';
+            valid = false;
+        }
+
+        if(distances[msg.sender] > minDistance) {
+            errorMsg = 'Player did not win.';
+            valid = false;
+        }
+
+        return (valid, errorMsg);
+    }
+
+    /* --------------------
         Placing Bets
        -------------------- */
 
@@ -148,8 +182,6 @@ contract BetOnDate {
         players.push(msg.sender);
     }
 
-    // client should call validateBet() and then placeBet()
-    // to get validation feedback, otherwise bets fail silently
     function validateBet(uint date, uint value) constant returns(bool, bytes32) {
 
         bool valid = true;
