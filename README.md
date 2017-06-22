@@ -33,3 +33,9 @@ npm install
 ```
 truffle test
 ```
+
+## Testing:
+
+TODO
+Current unit test output:
+https://gist.github.com/ajsantander/56d82bf5708eeda1cfa2629ccab7f8be
