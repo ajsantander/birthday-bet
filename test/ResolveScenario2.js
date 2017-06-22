@@ -6,6 +6,8 @@ contract('BetOnDate(ResolveScenario2)', function(accounts) {
   let contractAddress;
   let unitBet;
   let lastDayToBet;
+  let postDate;
+  let preDate;
   let secondsInADay = 86400;
 
   // PREPARE
@@ -29,6 +31,8 @@ contract('BetOnDate(ResolveScenario2)', function(accounts) {
       // Get last day to bet
       .then(function(_lastDayToBet) {
         lastDayToBet = _lastDayToBet.toNumber();
+        preDate = lastDayToBet - secondsInADay * 2;
+        postDate = lastDayToBet + secondsInADay * 2;
         util.log('lastDayToBet: ', new Date(lastDayToBet * 1000));
         done();
       });
@@ -65,6 +69,23 @@ contract('BetOnDate(ResolveScenario2)', function(accounts) {
         let unitBetEth = web3.fromWei(unitBet, 'ether');
         assert.equal(contractBalance, initialContractBalance + unitBetEth * 9, "the contract's balance is incorrect");
       });
+  });
+
+  // SIMULATE TIME
+  it('should allow time to be set in debug mode', function() {
+    let instance;
+    return BetOnDate.deployed()
+      .then(function(_instance) {
+        instance = _instance;
+        return instance.setTime(postDate);
+      })
+      .then(function() {
+        return instance.getTime.call();
+      })
+      .then(function(time) {
+        util.log('time set to: ', new Date(time * 1000));
+        assert.equal(time, postDate, 'target future date was not set');
+      })
   });
 
   // RESOLVE GAME

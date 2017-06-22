@@ -6,6 +6,8 @@ contract('BetOnDate(ResolveTests)', function(accounts) {
   let contractAddress;
   let unitBet;
   let lastDayToBet;
+  let postDate;
+  let preDate;
   let secondsInADay = 86400;
 
   // PREPARE
@@ -29,6 +31,8 @@ contract('BetOnDate(ResolveTests)', function(accounts) {
       // Get last day to bet
       .then(function(_lastDayToBet) {
         lastDayToBet = _lastDayToBet.toNumber();
+        preDate = lastDayToBet - secondsInADay * 2;
+        postDate = lastDayToBet + secondsInADay * 2;
         util.log('lastDayToBet: ', new Date(lastDayToBet * 1000));
         done();
       });
@@ -36,9 +40,11 @@ contract('BetOnDate(ResolveTests)', function(accounts) {
 
   // ACCEPT A BUNCH OF VALID BETS
   it('should accept a number of valid bets', function() {
+
     let instance;
     let initialContractBalance = util.getBalance(contractAddress);
     util.log('initialContractBalance: ', initialContractBalance);
+
     function placeBet(acctIndex, date) {
       util.log('placing bet... date: ', new Date(date * 1000));
       return instance.placeBet(date, {
@@ -46,6 +52,7 @@ contract('BetOnDate(ResolveTests)', function(accounts) {
         value: unitBet
       });
     }
+
     return BetOnDate.deployed()
       .then(function(_instance) {
         instance = _instance;
@@ -67,8 +74,8 @@ contract('BetOnDate(ResolveTests)', function(accounts) {
       });
   });
 
-  // PLAYER RESOLVE GAME
-  it('shouldnt allow a regular player to resolve the game', function() {
+  // OWNER EARLY RESOLVE GAME
+  it('shouldnt allow the owner to resolve bets before last day to bet', function() {
     let instance;
     return BetOnDate.deployed()
       .then(function(_instance) {
@@ -76,8 +83,51 @@ contract('BetOnDate(ResolveTests)', function(accounts) {
         let resolutionDate = lastDayToBet + secondsInADay * 5; // win day
         util.log('resolving on: ', new Date(resolutionDate * 1000));
         return instance.resolve(resolutionDate, {
-          from: accounts[3]
+          from: accounts[0]
         });
+      })
+      .then(function() {
+        return instance.numWinners.call();
+      })
+      .then(function(winnerCount) {
+        util.log('winners: ', winnerCount.toNumber());
+        assert.equal(winnerCount.toNumber(), 0, "there arent supposed to be any winners");
+      })
+  });
+
+  // SIMULATE TIME
+  it('should allow time to be set in debug mode', function() {
+    let instance;
+    return BetOnDate.deployed()
+      .then(function(_instance) {
+        instance = _instance;
+        return instance.setTime(postDate);
+      })
+      .then(function() {
+        return instance.getTime.call();
+      })
+      .then(function(time) {
+        util.log('time set to: ', new Date(time * 1000));
+        assert.equal(time, postDate, 'target future date was not set');
+      })
+  });
+
+  // PLAYER RESOLVE GAME
+  it('should not allow a regular player to resolve the game', function() {
+    let instance;
+    return BetOnDate.deployed()
+      .then(function(_instance) {
+        instance = _instance;
+        let resolutionDate = lastDayToBet + secondsInADay * 5; // win day
+        util.log('resolving on: ', new Date(resolutionDate * 1000));
+        try {
+          return instance.resolve(resolutionDate, {
+            from: accounts[3]
+          });
+        }
+        catch(err) {
+          console.log('EERRRRRRRR');
+        }
       })
       .then(function() {
         return instance.numWinners.call();

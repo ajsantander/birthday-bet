@@ -21,6 +21,11 @@ function logBalances(accounts) {
   }
 }
 
+function getBlockTime() {
+  let timestamp = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+  return new Date(timestamp * 1000);
+}
+
 function getUnixTimeStamp(date) {
   return Math.floor(date.getTime() / 1000);
 }

@@ -269,8 +269,6 @@ contract('BetOnDate(BetTests)', function(accounts) {
       });
   });
 
-  // TODO: test exploit: 2nd bet payable return to empty the contract's balance
-
   // TODO: disallow bets on dates beyond two months after last day to bet
 
   // TODO (nice to have): should allow a bet to be withdrawn

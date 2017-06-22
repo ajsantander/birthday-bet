@@ -11,15 +11,17 @@ contract BetOnDate {
     address[] players;
 
     function BetOnDate(uint _unitBet, uint _lastDayToBet, bool _isDebugging) {
+
+        simulatedNow = now;
+
         owner = msg.sender;
         isDebugging = _isDebugging;
         unitBet = _unitBet;
         lastDayToBet = _lastDayToBet;
         currentGameState = GameState.betsAreOpen;
 
-        // TODO: use end date
-        maxDistance = 5184000;
-        minDistance = maxDistance; // seconds in 2 months
+        maxDistance = 5184000; // seconds in 2 months
+        minDistance = maxDistance;
     }
 
     modifier onlyIfDebugging() {
@@ -30,10 +32,10 @@ contract BetOnDate {
         if(msg.sender == owner) _;
     }
 
-    //    modifier onlyInState(GameState expectedState) {
-    //        if(expectedState == currentGameState) _;
-    //        else throw;
-    //    }
+    modifier onlyInState(GameState expectedState) {
+        if(expectedState == currentGameState) _;
+        else throw;
+    }
 
     /* --------------------
         Game State
@@ -48,8 +50,9 @@ contract BetOnDate {
     }
     GameState public currentGameState;
 
-    // TODO: make private
-    function updateGameState(GameState state) {
+    function updateGameState(GameState state) private {
+        if(currentGameState == state) return;
+
         currentGameState = state;
 
         uint gameStateIdx;
@@ -65,7 +68,7 @@ contract BetOnDate {
         GameStateChanged(gameStateIdx);
     }
 
-    function evaluateGameState() {
+    function evaluateGameState() private {
         if(currentGameState == GameState.betsAreOpen && getTime() > lastDayToBet) {
             updateGameState(GameState.betsAreClosed);
         }
@@ -83,7 +86,7 @@ contract BetOnDate {
     mapping (address => uint) distances;
     mapping (uint => uint) distanceCounts;
 
-    function withdrawPrize() {
+    function withdrawPrize() onlyInState(GameState.betsResolved) {
         if(bets[msg.sender] == 0) return;
         if(distances[msg.sender] == minDistance) {
             uint prize = getPrize();
@@ -92,11 +95,12 @@ contract BetOnDate {
         }
     }
 
-    function getPrize() constant returns (uint) {
+    function getPrize() onlyInState(GameState.betsResolved) constant returns (uint) {
         return totalPrize / numWinners;
     }
 
     function resolve(uint _resolutionDate) onlyOwner {
+        if(getTime() < lastDayToBet) { return; }
 
         resolutionDate = _resolutionDate;
 
@@ -129,7 +133,7 @@ contract BetOnDate {
         Placing Bets
        -------------------- */
 
-    function placeBet(uint date) payable {
+    function placeBet(uint date) payable onlyInState(GameState.betsAreOpen) {
 
         var (betIsValid, /*errorMsg*/) = validateBet(date, msg.value);
 
