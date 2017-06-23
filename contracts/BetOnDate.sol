@@ -32,11 +32,6 @@ contract BetOnDate {
         if(msg.sender == owner) _;
     }
 
-    modifier onlyInState(GameState expectedState) {
-        if(expectedState == currentGameState) _;
-        else throw;
-    }
-
     /* --------------------
         Game State
        -------------------- */
@@ -120,7 +115,7 @@ contract BetOnDate {
         Prize Withdrawal
        -------------------- */
 
-    function withdrawPrize() onlyInState(GameState.betsResolved) {
+    function withdrawPrize() {
 
         var (withdrawalIsValid, /*errorMsg*/) = validatePrizeWithdrawal();
         if(!withdrawalIsValid) {
@@ -134,29 +129,29 @@ contract BetOnDate {
         distances[msg.sender] = maxDistance;
     }
 
-    function getPrize() onlyInState(GameState.betsResolved) constant returns (uint) {
+    function getPrize() constant returns (uint) {
         return totalPrize / numWinners;
     }
 
     function validatePrizeWithdrawal() constant returns(bool, bytes32) {
 
         bool valid = true;
-        bytes32 errorMsg = 'Withdrawal is valid.';
+        bytes32 errorMsg = 'The withdrawal is valid.';
 
         evaluateGameState();
 
         if(valid && currentGameState != GameState.betsResolved) {
-            errorMsg = 'Bets are not resolved.';
+            errorMsg = 'Sorry, the game is not over.';
             valid = false;
         }
 
         if(valid && bets[msg.sender] == 0) {
-            errorMsg = 'Player didnt bet.';
+            errorMsg = 'Sorry, you didnt place a bet.';
             valid = false;
         }
 
         if(distances[msg.sender] > minDistance) {
-            errorMsg = 'Player did not win.';
+            errorMsg = 'Sorry, you didnt win the bet.';
             valid = false;
         }
 
@@ -167,7 +162,7 @@ contract BetOnDate {
         Placing Bets
        -------------------- */
 
-    function placeBet(uint date) payable onlyInState(GameState.betsAreOpen) {
+    function placeBet(uint date) payable {
 
         var (betIsValid, /*errorMsg*/) = validateBet(date, msg.value);
 
@@ -185,36 +180,40 @@ contract BetOnDate {
     function validateBet(uint date, uint value) constant returns(bool, bytes32) {
 
         bool valid = true;
-        bytes32 errorMsg = 'Bet is valid.';
+        bytes32 errorMsg = 'The bet is valid.';
 
         evaluateGameState();
 
         if(valid && currentGameState != GameState.betsAreOpen) {
-            errorMsg = 'Bets are closed.';
+            errorMsg = 'Sorry, bets are closed.';
             valid = false;
         }
 
-        if(valid && date < lastDayToBet) {
-            errorMsg = 'Date is too early.';
+        if(valid && date + 86400 < lastDayToBet) {
+            errorMsg = 'Please, pick a later date.';
             valid = false;
         }
 
         if(valid && value != unitBet) {
-            errorMsg = 'Incorrect bet amount.';
+            errorMsg = 'Please pay the minimum bet.';
             valid = false;
         }
 
         if(valid && bets[msg.sender] != 0) {
-            errorMsg = 'Player has already placed a bet.';
+            errorMsg = 'You have already placed a bet.';
             valid = false;
         }
 
         if(valid && msg.sender == owner) {
-            errorMsg = 'Owner cannot place a bet.';
+            errorMsg = 'The game owner cannot play.';
             valid = false;
         }
 
         return (valid, errorMsg);
+    }
+
+    function getPlayerBetDate(address player) constant returns(uint) {
+        return bets[player];
     }
 
     /* ---------------------------
