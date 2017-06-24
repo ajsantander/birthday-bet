@@ -11,6 +11,9 @@ NOTE: This is by no means a production or secure smart contract, it is being dev
 ## UI project
 https://github.com/ajsantander/birthday-bet-ui
 
+## Live Testnet Version
+https://ajsantander.github.io/birthday-bet-ui
+
 ## Rules
 TODO
 
