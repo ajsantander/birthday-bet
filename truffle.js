@@ -17,7 +17,8 @@
 * */
 
 var owner = '0x548610755a58567e582ead0f085e7e4c9d93e248';
-var contract = '0xe089a5e7d3b804666a12c778fd22e4d80d4ad494';
+var contract = '0x9bb8bd68d0dff1326fd4b3a90f929563e166dc0d';
+// watch in etherscan: https://ropsten.etherscan.io/address/0x9bb8bd68d0dff1326fd4b3a90f929563e166dc0d
 
 module.exports = {
   networks: {
