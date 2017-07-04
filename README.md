@@ -14,9 +14,6 @@ https://github.com/ajsantander/birthday-bet-ui
 ## Live Testnet Version
 https://ajsantander.github.io/birthday-bet-ui
 
-## Rules
-TODO
-
 ## Install instructions
 
 Make sure truffle is installed globally
@@ -37,8 +34,12 @@ npm install
 truffle test
 ```
 
-## Testing:
+## TODO
+- There is currently a flaw with the contract in that 1) the contract state depends
+on an external entity calling placeBet or resolve for it to update its state.
+Furthermore, it doesn't actually change state while calling validateBet, because it is a call method
+and is not supposed to change state. A test needs to be added where a user tries to place a bet after the
+date on which the bets close, which will most likely fail.
 
-TODO
 Current unit test output:
 https://gist.github.com/ajsantander/56d82bf5708eeda1cfa2629ccab7f8be
